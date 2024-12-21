@@ -1,3 +1,3 @@
 # Poyecto-SSOO
 
-Alejandro Castellanos y Art Schmitz
+Alejandro Castellanos y Art Schmitz.
