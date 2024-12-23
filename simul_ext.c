@@ -18,11 +18,13 @@ int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
               char *nombre);
 void Directorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos);
 
-/*
+
 int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, 
               char *nombreantiguo, char *nombrenuevo);
+
 int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, 
              EXT_DATOS *memdatos, char *nombre);
+/*
 int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
            EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock,
            char *nombre,  FILE *fich);
@@ -37,9 +39,9 @@ void GrabarDatos(EXT_DATOS *memdatos, FILE *fich);
 int main()
 {
 	 char *comando;
-	 char orden[LONGITUD_COMANDO];
-	 char argumento1[LONGITUD_COMANDO];
-	 char argumento2[LONGITUD_COMANDO];
+	 char *orden;
+	 char *argumento1;
+	 char *argumento2;
 	 
 	 int grabardatos = 0;
 	 EXT_SIMPLE_SUPERBLOCK ext_superblock;
@@ -70,19 +72,56 @@ int main()
 			 printf(">> ");
 			 fflush(stdin);
 			 comando = leeLinea(LONGITUD_COMANDO);
+			 orden = strtok(comando, " ");
+			argumento1 = strtok(NULL, " ");
+			argumento2 = strtok(NULL, " ");
 		 } while (ComprobarComando(comando, orden, argumento1, argumento2) != 0);
 		 
-		 if (strcmp(comando, "dir") == 0) {
+		 if (strcmp(orden, "dir") == 0) {
 			 Directorio(directorio, &ext_blq_inodos);
 		 }
-		 if (strcmp(comando, "info") == 0) {
+		 if (strcmp(orden, "info") == 0) {
 			 LeeSuperBloque(&ext_superblock);
 		 }
 		
-		 if (strcmp(comando, "bytemaps") == 0) {
+		 if (strcmp(orden, "bytemaps") == 0) {
 			 Printbytemaps(&ext_bytemaps);
 		 }
-		return 0;
+		 
+		 
+		 if (strcmp(orden, "rename") == 0) {
+			 if (Renombrar(directorio, &ext_blq_inodos, argumento1, argumento2) == -1) {
+				 printf("Error: no se pudo renombrar el fichero\n");
+			 }
+		
+		 }
+		/*
+		 if (strcmp(orden, "imprimir") == 0) {
+			 if (Imprimir(directorio, &ext_blq_inodos, memdatos, argumento1) == -1) {
+				 printf("Error: no se pudo imprimir el contenido del fichero\n");
+			 }
+		
+		 }
+		  
+		 if (strcmp(orden, "remove") == 0) {
+			 if (Borrar(directorio, &ext_blq_inodos, &ext_bytemaps, &ext_superblock, argumento1, fent) == -1) {
+				 printf("Error: no se pudo eliminar el fichero\n");
+			 }
+			 grabardatos = 1;
+		
+		 }
+		 if (strcmp(orden, "copy") == 0) {
+			 if (Copiar(directorio, &ext_blq_inodos, &ext_bytemaps, &ext_superblock, memdatos, argumento1, argumento2, fent) == -1) {
+				 printf("Error: no se pudo copiar el fichero\n");
+			 }
+			 grabardatos = 1;
+		 }
+		 if (strcmp(orden, "salir") == 0) {
+			 GrabarDatos(memdatos, fent);
+			 fclose(fent);
+		 }
+		*/
+
 	 }
 }
 
@@ -173,4 +212,31 @@ void Directorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *bloque_inodos) {
             printf("\n");
         }
     }
+}
+
+int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombreantiguo, char *nombrenuevo) {
+    int resultado = -1;
+
+    // Verificamos que el nuevo nombre no excede la longitud máxima del nombre de archivo
+    if (strlen(nombrenuevo) >= LEN_NFICH) {
+        printf("Error: El nombre nuevo es demasiado largo.\n");
+    } else {
+        // Verificamos que el archivo con el nombre antiguo existe
+        int indiceAntiguo = BuscaFich(directorio, inodos, nombreantiguo);
+        if (indiceAntiguo == -1) {
+            printf("Error: El archivo '%s' no existe en el directorio.\n", nombreantiguo);
+        } else {
+            // Verificamos que no exista un archivo con el nuevo nombre
+            int indiceNuevo = BuscaFich(directorio, inodos, nombrenuevo);
+            if (indiceNuevo != -1) {
+                printf("Error: Ya existe un archivo con el nombre '%s'.\n", nombrenuevo);
+            } else {
+                // Si no existe un archivo con el nuevo nombre lo renombramos
+                strcpy(directorio[indiceAntiguo].dir_nfich, nombrenuevo);
+                printf("Archivo renombrado de '%s' a '%s'.\n", nombreantiguo, nombrenuevo);
+                resultado = 0; // Renombrado exitoso
+            }
+        }
+    }
+    return resultado;
 }
