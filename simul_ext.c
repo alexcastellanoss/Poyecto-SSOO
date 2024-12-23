@@ -8,10 +8,9 @@
 
 void Printbytemaps(EXT_BYTE_MAPS *ext_bytemaps);
 char* leeLinea(int tam);
-
 int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argumento2);
-/*
 void LeeSuperBloque(EXT_SIMPLE_SUPERBLOCK *psup);
+/*
 int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, 
               char *nombre);
 void Directorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos);
@@ -67,10 +66,16 @@ int main()
 			 fflush(stdin);
 			 comando = leeLinea(LONGITUD_COMANDO);
 		 } while (ComprobarComando(comando, orden, argumento1, argumento2) != 0);
+		 
+		 if (strcmp(comando, "info") == 0) {
+			 LeeSuperBloque(&ext_superblock);
+		 }
+		
 		 if (strcmp(comando, "bytemaps") == 0) {
 			 Printbytemaps(&ext_bytemaps);
 		 }
-		 
+
+		 printf("Error: comando desconocido\n");
 	 }
 }
 
@@ -79,7 +84,7 @@ void Printbytemaps(EXT_BYTE_MAPS *ext_bytemaps) {
     int i;
 
     // Mostrar bytemap de inodos
-    printf("Inodos :");
+    printf("Inodos:");
     for (i = 0; i < MAX_INODOS; i++) {
         printf(" %d", ext_bytemaps->bmap_inodos[i]);
     }
@@ -119,4 +124,11 @@ char *leeLinea(int tam)
 
    return res;
 
+}
+void LeeSuperBloque(EXT_SIMPLE_SUPERBLOCK *psup) {
+    printf("Informacion del superbloque:\n");
+    printf("Bloques libres: %d\n", psup->s_free_blocks_count);
+    printf("Inodos libres: %d\n", psup->s_free_inodes_count);
+    printf("Tamano de la particion: %d bloques\n", psup->s_blocks_count);
+    printf("Primer bloque de datos: %d\n", psup->s_first_data_block);
 }
