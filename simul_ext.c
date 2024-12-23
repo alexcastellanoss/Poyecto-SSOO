@@ -7,12 +7,8 @@
 #define LONGITUD_COMANDO 100
 #define NUM_COMANDOS 8
 
-
-
 char *listaComandos[NUM_COMANDOS] = {"dir","info","bytemaps","rename","imprimir","remove","copy","salir"};
-
 void Printbytemaps(EXT_BYTE_MAPS *ext_bytemaps);
-
 int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argumento2);
 int palabraEnLista(char *palabra, char **lista, int num_elementos);
 char* leeLinea(int tam);
@@ -23,6 +19,7 @@ int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombrea
 int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_DATOS *memdatos, char *nombre);
 int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, char *nombre,  FILE *fich);
 int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, EXT_DATOS *memdatos, char *nombreorigen, char *nombredestino,  FILE *fich);
+
 /*
 void Grabarinodosydirectorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, FILE *fich);
 void GrabarByteMaps(EXT_BYTE_MAPS *ext_bytemaps, FILE *fich);
@@ -30,8 +27,7 @@ void GrabarSuperBloque(EXT_SIMPLE_SUPERBLOCK *ext_superblock, FILE *fich);
 void GrabarDatos(EXT_DATOS *memdatos, FILE *fich);
 */
 
-int main()
-{
+int main(){
 	char *comando;
 	char *orden;
 	char *argumento1;
@@ -74,43 +70,36 @@ int main()
 		 if (strcmp(orden, "dir") == 0) {
 			 Directorio(directorio, &ext_blq_inodos);
 		 }
-		 
 		 else if(strcmp(orden, "info") == 0) {
 			 LeeSuperBloque(&ext_superblock);
 		 }
-		
 		 else if(strcmp(orden, "bytemaps") == 0) {
 			 Printbytemaps(&ext_bytemaps);
 		 }
-		 
 		 else if(strcmp(orden, "rename") == 0) {
 			 if (Renombrar(directorio, &ext_blq_inodos, argumento1, argumento2) == -1) {
 				 printf("Error: no se pudo renombrar el fichero\n");
 			 }
 		
 		 }
-		
 		 else if(strcmp(orden, "imprimir") == 0) {
 			 if (Imprimir(directorio, &ext_blq_inodos, memdatos, argumento1) == -1) {
 				 printf("Error: no se pudo imprimir el contenido del fichero\n");
 			 }
 		
 		 }
-		  
 		 else if(strcmp(orden, "remove") == 0) {
 			 if (Borrar(directorio, &ext_blq_inodos, &ext_bytemaps, &ext_superblock, argumento1, fent) == -1) {
 				 printf("Error: no se pudo eliminar el fichero\n");
 			 }
 			 grabardatos = 1;
-		 }
-			 
+		 } 
 		 else if(strcmp(orden, "copy") == 0) {
 			 if (Copiar(directorio, &ext_blq_inodos, &ext_bytemaps, &ext_superblock, memdatos, argumento1, argumento2, fent) == -1) {
 				 printf("Error: no se pudo copiar el fichero\n");
 			 }
 			 grabardatos = 1;
-		 }
-			 
+		 } 
 		 else if(strcmp(orden, "salir") == 0) {
 			 fclose(fent);
 			 return 0;
@@ -145,7 +134,6 @@ int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argu
         // Mensaje de error para comandos ilegales.
         printf("ERROR: Comando ilegal [bytemaps, copy, dir, info, imprimir, rename, remove, salir]\n");
     }
-
     return resultado;
 }
 
@@ -172,13 +160,9 @@ char *leeLinea(int tam)
       {
         resultado[i++] = c;
       }
-      
-
    }
    while(c != '\n' && i < tam);
-
    resultado[i] = '\0';
-
    return resultado;
 }
 
@@ -291,10 +275,8 @@ int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
         if (inodo->size_fichero == 0) {
             printf("El archivo está vacio.\n");
         }
-
         resultado = 0;  // El archivo se encontró y se imprimieron los datos correctamente
     }
-
     return resultado;
 }
 
