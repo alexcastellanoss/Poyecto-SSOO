@@ -8,12 +8,17 @@
 
 void Printbytemaps(EXT_BYTE_MAPS *ext_bytemaps);
 char* leeLinea(int tam);
+
 int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argumento2);
+
 void LeeSuperBloque(EXT_SIMPLE_SUPERBLOCK *psup);
-/*
+
+
 int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, 
               char *nombre);
 void Directorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos);
+
+/*
 int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, 
               char *nombreantiguo, char *nombrenuevo);
 int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, 
@@ -67,6 +72,9 @@ int main()
 			 comando = leeLinea(LONGITUD_COMANDO);
 		 } while (ComprobarComando(comando, orden, argumento1, argumento2) != 0);
 		 
+		 if (strcmp(comando, "dir") == 0) {
+			 Directorio(directorio, &ext_blq_inodos);
+		 }
 		 if (strcmp(comando, "info") == 0) {
 			 LeeSuperBloque(&ext_superblock);
 		 }
@@ -74,8 +82,7 @@ int main()
 		 if (strcmp(comando, "bytemaps") == 0) {
 			 Printbytemaps(&ext_bytemaps);
 		 }
-
-		 printf("Error: comando desconocido\n");
+		return 0;
 	 }
 }
 
@@ -84,7 +91,7 @@ void Printbytemaps(EXT_BYTE_MAPS *ext_bytemaps) {
     int i;
 
     // Mostrar bytemap de inodos
-    printf("Inodos:");
+    printf("Inodos :");
     for (i = 0; i < MAX_INODOS; i++) {
         printf(" %d", ext_bytemaps->bmap_inodos[i]);
     }
@@ -131,4 +138,39 @@ void LeeSuperBloque(EXT_SIMPLE_SUPERBLOCK *psup) {
     printf("Inodos libres: %d\n", psup->s_free_inodes_count);
     printf("Tamano de la particion: %d bloques\n", psup->s_blocks_count);
     printf("Primer bloque de datos: %d\n", psup->s_first_data_block);
+}
+
+int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombre) {
+	int resultado = -1; // Devuelve -1 si no se encuentra el fichero
+    for (int i = 0; i < MAX_FICHEROS; i++) {
+        // Verificamos si el fichero no está vacío y si el nombre coincide con el fichero que estamos buscando
+        if (directorio[i].dir_inodo != NULL_INODO && strcmp(directorio[i].dir_nfich, nombre) == 0) {
+            resultado = i; // Devuelve el índice del fichero encontrado
+        }
+    }
+
+    return resultado; 
+}
+void Directorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *bloque_inodos) {
+
+    printf("Listado de ficheros en el directorio:\n");
+
+    for (int i = 1; i < MAX_FICHEROS; i++) {
+        // Si el inodo es diferente de BloqueNullo y el nombre no está vacío accedemos al inodo correspondiente dentro del bloque
+        if (directorio[i].dir_inodo != NULL_BLOQUE && strlen(directorio[i].dir_nfich) > 0) {
+            EXT_SIMPLE_INODE *inodo = &bloque_inodos->blq_inodos[directorio[i].dir_inodo];
+
+            printf("Nombre: %s,\t Inodo: %d,\t Tamano: %d bytes,\t Bloques: ", 
+                   directorio[i].dir_nfich, directorio[i].dir_inodo, 
+                   inodo->size_fichero);
+
+            // Imprimimos los bloques que ocupa el archivo
+            for (int j = 0; j < MAX_NUMS_BLOQUE_INODO; j++) {
+                if (inodo->i_nbloque[j] != NULL_BLOQUE) {
+                    printf("%d ", inodo->i_nbloque[j]);
+                }
+            }
+            printf("\n");
+        }
+    }
 }
