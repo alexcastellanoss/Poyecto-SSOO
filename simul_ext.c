@@ -24,10 +24,11 @@ int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
 
 int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, 
              EXT_DATOS *memdatos, char *nombre);
-/*
+
 int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
            EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock,
            char *nombre,  FILE *fich);
+/*
 int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
            EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock,
            EXT_DATOS *memdatos, char *nombreorigen, char *nombredestino,  FILE *fich);
@@ -102,27 +103,15 @@ int main()
 			 }
 		
 		 }
-		  /*
+		  
 		 if (strcmp(orden, "remove") == 0) {
 			 if (Borrar(directorio, &ext_blq_inodos, &ext_bytemaps, &ext_superblock, argumento1, fent) == -1) {
 				 printf("Error: no se pudo eliminar el fichero\n");
 			 }
 			 grabardatos = 1;
-		
-		 }
-		 if (strcmp(orden, "copy") == 0) {
-			 if (Copiar(directorio, &ext_blq_inodos, &ext_bytemaps, &ext_superblock, memdatos, argumento1, argumento2, fent) == -1) {
-				 printf("Error: no se pudo copiar el fichero\n");
-			 }
-			 grabardatos = 1;
-		 }
-		 if (strcmp(orden, "salir") == 0) {
-			 GrabarDatos(memdatos, fent);
-			 fclose(fent);
-		 }
-		*/
 
-	 }
+		}
+	}
 }
 
 
@@ -169,7 +158,6 @@ char *leeLinea(int tam)
    res[i] = '\0';
 
    return res;
-
 }
 void LeeSuperBloque(EXT_SIMPLE_SUPERBLOCK *psup) {
     printf("Informacion del superbloque:\n");
@@ -284,5 +272,55 @@ int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
         resultado = 0;  // El archivo se encontró y se imprimieron los datos correctamente
     }
 
+    return resultado;
+}
+
+int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
+           EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock,
+           char *nombre, FILE *fich) {
+    int resultado = -1;  // Valor de retorno, -1 si no se puede borrar el archivo
+
+    // Buscar el archivo en el directorio
+    int indiceFichero = BuscaFich(directorio, inodos, nombre);
+    if (indiceFichero == -1) {
+        printf("Error: El archivo '%s' no se encuentra en el directorio.\n", nombre);
+        return resultado;
+    }
+
+    // Obtener el inodo asociado al archivo
+    unsigned short int inodoArchivo = directorio[indiceFichero].dir_inodo;
+    EXT_SIMPLE_INODE *inodo = &inodos->blq_inodos[inodoArchivo];
+
+    // Liberar los bloques de datos
+    for (int i = 0; i < MAX_NUMS_BLOQUE_INODO; i++) {
+        if (inodo->i_nbloque[i] != NULL_BLOQUE) {
+            // Marcar el bloque como libre en el mapa de bloques
+            ext_bytemaps->bmap_bloques[inodo->i_nbloque[i]] = 0;  // 0 indica bloque libre
+            printf("Bloque %d liberado.\n", inodo->i_nbloque[i]);
+        }
+    }
+
+    // Liberar el inodo
+    ext_bytemaps->bmap_inodos[inodoArchivo] = 0;  // 0 indica inodo libre
+    printf("Inodo %d liberado.\n", inodoArchivo);
+
+    // Marcar el archivo como eliminado en el directorio (limpiar el nombre y el inodo)
+    memset(directorio[indiceFichero].dir_nfich, 0, LEN_NFICH);
+    directorio[indiceFichero].dir_inodo = NULL_INODO;
+    printf("Archivo '%s' eliminado del directorio.\n", nombre);
+
+    // Actualizar el superbloque
+    ext_superblock->s_free_blocks_count += inodo->size_fichero / SIZE_BLOQUE;
+    ext_superblock->s_free_inodes_count += 1;
+    printf("Superbloque actualizado: Bloques libres: %d, Inodos libres: %d.\n", 
+           ext_superblock->s_free_blocks_count, ext_superblock->s_free_inodes_count);
+
+    // Guardar los cambios en el archivo
+    fseek(fich, 0, SEEK_SET);  // Volver al principio del archivo
+    fwrite(ext_bytemaps, SIZE_BLOQUE, 1, fich);  // Guardar los mapas de bits
+    fwrite(ext_superblock, SIZE_BLOQUE, 1, fich);  // Guardar el superbloque
+    fwrite(directorio, SIZE_BLOQUE, MAX_FICHEROS, fich);  // Guardar el directorio
+
+    resultado = 0;  // El archivo se borró correctamente
     return resultado;
 }
