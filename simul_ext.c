@@ -5,11 +5,18 @@
 #include "cabeceras.h"
 
 #define LONGITUD_COMANDO 100
+#define NUM_COMANDOS 8
+
+
+
+char *listaComandos[NUM_COMANDOS] = {"dir","info","bytemaps","rename","imprimir","remove","copy","salir"};
 
 void Printbytemaps(EXT_BYTE_MAPS *ext_bytemaps);
-char* leeLinea(int tam);
 
 int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argumento2);
+int palabraEnLista(char *palabra, char **lista, int num_elementos);
+
+char* leeLinea(int tam);
 
 void LeeSuperBloque(EXT_SIMPLE_SUPERBLOCK *psup);
 
@@ -41,33 +48,33 @@ void GrabarDatos(EXT_DATOS *memdatos, FILE *fich);
 
 int main()
 {
-	 char *comando;
-	 char *orden;
-	 char *argumento1;
-	 char *argumento2;
+	char *comando;
+	char *orden;
+	char *argumento1;
+	char *argumento2;
 	 
-	 int grabardatos = 0;
-	 EXT_SIMPLE_SUPERBLOCK ext_superblock;
-	 EXT_BYTE_MAPS ext_bytemaps;
-	 EXT_BLQ_INODOS ext_blq_inodos;
-	 EXT_ENTRADA_DIR directorio[MAX_FICHEROS];
-	 EXT_DATOS memdatos[MAX_BLOQUES_DATOS];
-	 EXT_DATOS datosfich[MAX_BLOQUES_PARTICION];
-	 FILE *fent;
+	int grabardatos = 0;
+	EXT_SIMPLE_SUPERBLOCK ext_superblock;
+	EXT_BYTE_MAPS ext_bytemaps;
+	EXT_BLQ_INODOS ext_blq_inodos;
+	EXT_ENTRADA_DIR directorio[MAX_FICHEROS];
+	EXT_DATOS memdatos[MAX_BLOQUES_DATOS];
+	EXT_DATOS datosfich[MAX_BLOQUES_PARTICION];
+	FILE *fent;
 	 
 	 // Lectura del fichero completo de una sola vez
-	 fent = fopen("particion.bin","r+b");
-	 if (fent == NULL) {
-		 printf("Error: No se pudo abrir el archivo particion.bin\n");
-		 return 1;
-	 }
+	fent = fopen("particion.bin","r+b");
+	if (fent == NULL) {
+		printf("Error: No se pudo abrir el archivo particion.bin\n");
+		return 1;
+	}
 	 fread(&datosfich, SIZE_BLOQUE, MAX_BLOQUES_PARTICION, fent);
 	 
-	 memcpy(&ext_superblock, (EXT_SIMPLE_SUPERBLOCK *)&datosfich[0], SIZE_BLOQUE);
-	 memcpy(&directorio, (EXT_ENTRADA_DIR *)&datosfich[3], SIZE_BLOQUE);
-	 memcpy(&ext_bytemaps, (EXT_BYTE_MAPS *)&datosfich[1], SIZE_BLOQUE);
-	 memcpy(&ext_blq_inodos, (EXT_BLQ_INODOS *)&datosfich[2], SIZE_BLOQUE);
-	 memcpy(&memdatos, (EXT_DATOS *)&datosfich[4], MAX_BLOQUES_DATOS * SIZE_BLOQUE);
+	memcpy(&ext_superblock, (EXT_SIMPLE_SUPERBLOCK *)&datosfich[0], SIZE_BLOQUE);
+	memcpy(&directorio, (EXT_ENTRADA_DIR *)&datosfich[3], SIZE_BLOQUE);
+	memcpy(&ext_bytemaps, (EXT_BYTE_MAPS *)&datosfich[1], SIZE_BLOQUE);
+	memcpy(&ext_blq_inodos, (EXT_BLQ_INODOS *)&datosfich[2], SIZE_BLOQUE);
+	memcpy(&memdatos, (EXT_DATOS *)&datosfich[4], MAX_BLOQUES_DATOS * SIZE_BLOQUE);
 	 
 	 // Bucle de tratamiento de comandos
 	 for (;;) {
@@ -121,6 +128,7 @@ int main()
 		 if (strcmp(orden, "salir") == 0) {
 			 GrabarDatos(memdatos, fent);
 			 fclose(fent);
+			 return 0;
 		}
 		
 	}
@@ -145,31 +153,51 @@ void Printbytemaps(EXT_BYTE_MAPS *ext_bytemaps) {
     printf("\n");
 }
 
-int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argumento2){
-	printf("si");
-	return 0;
+int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argumento2) {
+    int resultado = 1; 
+    // Verifica si la orden está en la lista de comandos válidos.
+    if (palabraEnLista(orden, listaComandos, NUM_COMANDOS) == 1) {
+        resultado = 0;  // Comando válido.
+    } else {
+        // Mensaje de error para comandos ilegales.
+        printf("ERROR: Comando ilegal [bytemaps, copy, dir, info, imprimir, rename, remove, salir]\n");
+    }
+
+    return resultado;
+}
+
+
+// Definición de la función
+int palabraEnLista(char *palabra, char **lista, int num_elementos) {
+	int resultado = 0; 
+    for (int i = 0; i < num_elementos; i++) {
+        if (strcmp(palabra, lista[i]) == 0) {
+            resultado = 1;  // La palabra está en la lista
+        }
+    }
+    return resultado;  //si continua siendo 0 la palabra no está en la lista
 }
 
 char *leeLinea(int tam)
 {
    int i = 0;
    char c;
-   char *res = (char *)malloc(tam);
+   char *resultado = (char *)malloc(tam);
    do
    {
       c = getchar();
       if(c != '\n')
       {
-         res[i++] = c;
+        resultado[i++] = c;
       }
       
 
    }
    while(c != '\n' && i < tam);
 
-   res[i] = '\0';
+   resultado[i] = '\0';
 
-   return res;
+   return resultado;
 }
 void LeeSuperBloque(EXT_SIMPLE_SUPERBLOCK *psup) {
     printf("Informacion del superbloque:\n");
