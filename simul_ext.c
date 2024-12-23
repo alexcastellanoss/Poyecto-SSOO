@@ -95,14 +95,14 @@ int main()
 			 }
 		
 		 }
-		/*
+		
 		 if (strcmp(orden, "imprimir") == 0) {
 			 if (Imprimir(directorio, &ext_blq_inodos, memdatos, argumento1) == -1) {
 				 printf("Error: no se pudo imprimir el contenido del fichero\n");
 			 }
 		
 		 }
-		  
+		  /*
 		 if (strcmp(orden, "remove") == 0) {
 			 if (Borrar(directorio, &ext_blq_inodos, &ext_bytemaps, &ext_superblock, argumento1, fent) == -1) {
 				 printf("Error: no se pudo eliminar el fichero\n");
@@ -231,12 +231,58 @@ int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombrea
             if (indiceNuevo != -1) {
                 printf("Error: Ya existe un archivo con el nombre '%s'.\n", nombrenuevo);
             } else {
-                // Si no existe un archivo con el nuevo nombre lo renombramos
+                // Si no existe un archivo con el nuevo nombre, renombramos
                 strcpy(directorio[indiceAntiguo].dir_nfich, nombrenuevo);
                 printf("Archivo renombrado de '%s' a '%s'.\n", nombreantiguo, nombrenuevo);
                 resultado = 0; // Renombrado exitoso
             }
         }
     }
+    return resultado;
+}
+
+int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, 
+             EXT_DATOS *memdatos, char *nombre) {
+    int resultado = -1;  // Valor de retorno, -1 si no se encuentra el archivo
+
+    // Buscamos el archivo por su nombre en el directorio
+    int indiceFichero = BuscaFich(directorio, inodos, nombre);
+
+    // Verificamos si el archivo fue encontrado
+    if (indiceFichero == -1) {
+        printf("Error: El archivo '%s' no se encuentra en el directorio.\n", nombre);
+    } else {
+        // Obtenemos el inodo asociado al archivo
+        unsigned short int inodoArchivo = directorio[indiceFichero].dir_inodo;
+
+        // Accedemos a la estructura del inodo
+        EXT_SIMPLE_INODE *inodo = &inodos->blq_inodos[inodoArchivo];
+
+        printf("Contenido del archivo '%s':\n", nombre);
+
+        // Imprimimos el contenido de los bloques de datos del archivo
+        for (int i = 0; i < MAX_NUMS_BLOQUE_INODO; i++) {
+            if (inodo->i_nbloque[i] != NULL_BLOQUE) {
+                // Cada bloque de datos tiene un índice que corresponde al array de bloques de datos
+                EXT_DATOS *bloqueDatos = &memdatos[inodo->i_nbloque[i]];
+
+                // Imprimimos los datos del bloque
+                printf("Bloque %d: ", i);
+                for (int j = 0; j < SIZE_BLOQUE; j++) {
+                    // Imprimimos el contenido del bloque (puedes formatearlo según lo que necesites)
+                    printf("%c", bloqueDatos->dato[j]);
+                }
+                printf("\n");
+            }
+        }
+
+        // Si no se imprimió ningún bloque, el archivo está vacío
+        if (inodo->size_fichero == 0) {
+            printf("El archivo está vacio.\n");
+        }
+
+        resultado = 0;  // El archivo se encontró y se imprimieron los datos correctamente
+    }
+
     return resultado;
 }
