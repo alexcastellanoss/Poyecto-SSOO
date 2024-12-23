@@ -28,15 +28,17 @@ int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
 int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
            EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock,
            char *nombre,  FILE *fich);
-/*
+
 int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
            EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock,
            EXT_DATOS *memdatos, char *nombreorigen, char *nombredestino,  FILE *fich);
+/*
 void Grabarinodosydirectorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, FILE *fich);
 void GrabarByteMaps(EXT_BYTE_MAPS *ext_bytemaps, FILE *fich);
 void GrabarSuperBloque(EXT_SIMPLE_SUPERBLOCK *ext_superblock, FILE *fich);
-void GrabarDatos(EXT_DATOS *memdatos, FILE *fich);
 */
+void GrabarDatos(EXT_DATOS *memdatos, FILE *fich);
+
 int main()
 {
 	 char *comando;
@@ -109,8 +111,18 @@ int main()
 				 printf("Error: no se pudo eliminar el fichero\n");
 			 }
 			 grabardatos = 1;
-
+		 }
+		 if (strcmp(orden, "copy") == 0) {
+			 if (Copiar(directorio, &ext_blq_inodos, &ext_bytemaps, &ext_superblock, memdatos, argumento1, argumento2, fent) == -1) {
+				 printf("Error: no se pudo copiar el fichero\n");
+			 }
+			 grabardatos = 1;
+		 }
+		 if (strcmp(orden, "salir") == 0) {
+			 GrabarDatos(memdatos, fent);
+			 fclose(fent);
 		}
+		
 	}
 }
 
@@ -323,4 +335,111 @@ int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
 
     resultado = 0;  // El archivo se borró correctamente
     return resultado;
+}
+
+int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
+           EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock,
+           EXT_DATOS *memdatos, char *nombreorigen, char *nombredestino,  FILE *fich) {
+    int resultado = 0;  // Valor de retorno, -1 si no se puede copiar el archivo
+
+    // Buscar el archivo de origen
+    int indiceOrigen = BuscaFich(directorio, inodos, nombreorigen);
+    if (indiceOrigen == -1) {
+        printf("Error: El archivo de origen '%s' no se encuentra en el directorio.\n", nombreorigen);
+        resultado = -1;
+    }
+
+    // Obtener el inodo del archivo de origen
+    unsigned short int inodoOrigen = directorio[indiceOrigen].dir_inodo;
+    EXT_SIMPLE_INODE *inodoArchivoOrigen = &inodos->blq_inodos[inodoOrigen];
+
+    // Verificar si hay espacio para un nuevo archivo (nuevo inodo)
+    int indiceDestino = -1;
+    for (int i = 0; i < MAX_FICHEROS; i++) {
+        if (directorio[i].dir_inodo == NULL_INODO) {
+            indiceDestino = i;
+            break;
+        }
+    }
+    if (indiceDestino == -1) {
+        printf("Error: No hay espacio disponible en el directorio para el nuevo archivo.\n");
+        resultado = -1;
+    }
+
+    // Asignar un nuevo inodo para el archivo de destino
+    unsigned short int nuevoInodo = -1;
+    for (int i = 0; i < MAX_INODOS; i++) {
+        if (ext_bytemaps->bmap_inodos[i] == 0) {  // Inodo libre
+            nuevoInodo = i;
+            break;
+        }
+    }
+    if (nuevoInodo == -1) {
+        printf("Error: No hay inodos libres para el archivo de destino.\n");
+        resultado = -1;
+    }
+
+    // Marcar el nuevo inodo como utilizado
+    ext_bytemaps->bmap_inodos[nuevoInodo] = 1;
+
+    // Crear el nuevo inodo para el archivo de destino
+    EXT_SIMPLE_INODE *inodoDestino = &inodos->blq_inodos[nuevoInodo];
+    memcpy(inodoDestino, inodoArchivoOrigen, sizeof(EXT_SIMPLE_INODE));
+
+    // Copiar los bloques de datos del archivo de origen al archivo de destino
+    int numBloquesUsados = 0;
+    for (int i = 0; i < MAX_NUMS_BLOQUE_INODO; i++) {
+        if (inodoArchivoOrigen->i_nbloque[i] != NULL_BLOQUE) {
+            // Buscar un bloque libre
+            int bloqueLibre = -1;
+            for (int j = 0; j < MAX_BLOQUES_DATOS; j++) {
+                if (ext_bytemaps->bmap_bloques[j] == 0) {
+                    bloqueLibre = j;
+                    break;
+                }
+            }
+            if (bloqueLibre == -1) {
+                printf("Error: No hay bloques libres para copiar los datos.\n");
+                resultado = -1;
+            }
+
+            // Marcar el bloque como utilizado
+            ext_bytemaps->bmap_bloques[bloqueLibre] = 1;
+            // Copiar los datos del bloque de origen al bloque de destino
+            EXT_DATOS *bloqueOrigen = &memdatos[inodoArchivoOrigen->i_nbloque[i]];
+            EXT_DATOS *bloqueDestino = &memdatos[bloqueLibre];
+            memcpy(bloqueDestino, bloqueOrigen, sizeof(EXT_DATOS));
+
+            // Asignar el bloque copiado al inodo del archivo de destino
+            inodoDestino->i_nbloque[numBloquesUsados] = bloqueLibre;
+            numBloquesUsados++;
+        }
+    }
+
+    // Actualizar el tamaño del archivo de destino
+    inodoDestino->size_fichero = inodoArchivoOrigen->size_fichero;
+
+    // Actualizar el directorio con el nuevo archivo de destino
+    strcpy(directorio[indiceDestino].dir_nfich, nombredestino);
+    directorio[indiceDestino].dir_inodo = nuevoInodo;
+
+    // Actualizar el superbloque
+    ext_superblock->s_free_blocks_count -= numBloquesUsados;
+    ext_superblock->s_free_inodes_count -= 1;
+
+    // Guardar los cambios en el archivo de partición
+    fseek(fich, 0, SEEK_SET);  // Volver al principio del archivo
+    fwrite(ext_bytemaps, SIZE_BLOQUE, 1, fich);  // Guardar los mapas de bits
+    fwrite(ext_superblock, SIZE_BLOQUE, 1, fich);  // Guardar el superbloque
+    fwrite(directorio, SIZE_BLOQUE, MAX_FICHEROS, fich);  // Guardar el directorio
+
+    printf("Archivo '%s' copiado correctamente a '%s'.\n", nombreorigen, nombredestino);
+    // El archivo se copió correctamente si sigue valiendo 0;
+    return resultado;
+	
+}
+
+void GrabarDatos(EXT_DATOS *memdatos, FILE *fich) {
+    fseek(fich, SIZE_BLOQUE * 4, SEEK_SET);  // Posicionar el cursor en el bloque correspondiente
+    fwrite(memdatos, SIZE_BLOQUE, MAX_BLOQUES_DATOS, fich);  // Escribir los bloques de datos en el archivo
 }
