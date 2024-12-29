@@ -80,13 +80,11 @@ int main(){
 			 if (Renombrar(directorio, &ext_blq_inodos, argumento1, argumento2) == -1) {
 				 printf("Error: no se pudo renombrar el fichero\n");
 			 }
-		
 		 }
 		 else if(strcmp(orden, "imprimir") == 0) {
 			 if (Imprimir(directorio, &ext_blq_inodos, memdatos, argumento1) == -1) {
 				 printf("Error: no se pudo imprimir el contenido del fichero\n");
 			 }
-		
 		 }
 		 else if(strcmp(orden, "remove") == 0) {
 			 if (Borrar(directorio, &ext_blq_inodos, &ext_bytemaps, &ext_superblock, argumento1, fent) == -1) {
@@ -108,18 +106,16 @@ int main(){
 }
 
 void Printbytemaps(EXT_BYTE_MAPS *ext_bytemaps) {
-    int i;
-
     // Mostrar bytemap de inodos
     printf("Inodos :");
-    for (i = 0; i < MAX_INODOS; i++) {
+    for (int i = 0; i < MAX_INODOS; i++) {
         printf(" %d", ext_bytemaps->bmap_inodos[i]);
     }
     printf("\n");
 
     // Mostrar los primeros 25 elementos del bytemap de bloques
     printf("Bloques [0-25]:");
-    for (i = 0; i < 25; i++) {
+    for (int i = 0; i < 25; i++) {
         printf(" %d", ext_bytemaps->bmap_bloques[i]);
     }
     printf("\n");
@@ -139,7 +135,7 @@ int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argu
 
 // Definición de la función
 int palabraEnLista(char *palabra, char **lista, int num_elementos) {
-	int resultado = 0; 
+    int resultado = 0; 
     for (int i = 0; i < num_elementos; i++) {
         if (strcmp(palabra, lista[i]) == 0) {
             resultado = 1;  // La palabra está en la lista
@@ -175,7 +171,7 @@ void LeeSuperBloque(EXT_SIMPLE_SUPERBLOCK *psup) {
 }
 
 int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombre) {
-	int resultado = -1; // Devuelve -1 si no se encuentra el fichero
+    int resultado = -1; // Devuelve -1 si no se encuentra el fichero
     for (int i = 0; i < MAX_FICHEROS; i++) {
         // Verificamos si el fichero no está vacío y si el nombre coincide con el fichero que estamos buscando
         if (directorio[i].dir_inodo != NULL_INODO && strcmp(directorio[i].dir_nfich, nombre) == 0) {
@@ -236,8 +232,7 @@ int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombrea
     return resultado;
 }
 
-int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, 
-             EXT_DATOS *memdatos, char *nombre) {
+int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_DATOS *memdatos, char *nombre) {
     int resultado = -1;  // Valor de retorno, -1 si no se encuentra el archivo
 
     // Buscamos el archivo por su nombre en el directorio
@@ -280,9 +275,7 @@ int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
     return resultado;
 }
 
-int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
-           EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock,
-           char *nombre, FILE *fich) {
+int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, char *nombre, FILE *fich) {
     int resultado = -1;  // Valor de retorno, -1 si no se puede borrar el archivo
 
     // Buscar el archivo en el directorio
@@ -330,9 +323,7 @@ int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
     return resultado;
 }
 
-int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos,
-           EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock,
-           EXT_DATOS *memdatos, char *nombreorigen, char *nombredestino,  FILE *fich) {
+int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, EXT_DATOS *memdatos, char *nombreorigen, char *nombredestino,  FILE *fich) {
     int resultado = 0;  // Valor de retorno, -1 si no se puede copiar el archivo
 
     // Buscar el archivo de origen
